@@ -1,0 +1,64 @@
+[build-system]
+requires = ["setuptools", "setuptools_scm"]
+build-backend = "setuptools.build_meta"
+
+
+#[tool.setuptools.packages.find]
+#where = ["datastock"]
+#include = ["datastock*"]
+#namespaces = false
+
+[tool.setuptools]
+packages = ["beampipe"]   # , "beampipe.tests"]
+
+
+[tool.setuptools_scm]
+version_file = "beampipe/_version.py"
+
+[tool.setuptools.package-data]
+mypkg = ["*.txt", "*.npz"]
+
+
+[tool.setuptools.dynamic]
+classifiers = {file = ["CLASSIFIERS.txt"]}
+
+
+[project]
+name = "beampipe"
+readme = "README.md"
+license = {text = "MIT"}
+dynamic = ["version", "classifiers"]
+description = "Generic handler for 3d pipes"
+authors = [
+    {name = "Didier VEZINET", email = "didier.vezinet@gmail.com"},
+]
+maintainers = [
+    {name = "Didier VEZINET", email = "didier.vezinet@gmail.com"},
+]
+keywords = [
+    "Collection", "modelling",
+]
+requires-python = ">=3.10"
+dependencies = [
+	'datastock>=0.0.56',
+]
+
+
+[project.urls]
+Homepage = "https://github.com/ToFuProject/beampipe"
+Issues = "https://github.com/ToFuProject/beampipe/issues"
+
+
+[dependency-groups]
+dev = [
+	"pytest",
+]
+
+
+[project.optional-dependencies]
+linting = [
+  'ruff'
+]
+formatting = [
+  'ruff'
+]
