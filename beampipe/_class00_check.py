@@ -70,17 +70,20 @@ def _check(
     # key
     # ------------
 
+    coll = kwdargs['coll']
     wcsys = coll._which_csys
-    lout = list(coll.dobj.get(wcsys, {}).keys())
-    key = ds._generic_check._check_var(
-        key, 'key',
-        types=str,
-        excluded=lout,
+    kwdargs['key'] = ds._generic_check._obj_key(
+        d0=coll.get(wcsys, {}),
+        short='csys',
+        key=kwdargs['key'],
+        ndigits=None,
     )
 
     # ------------
     # kcsys0
     # ------------
+
+
 
     # ------------
     # clean
