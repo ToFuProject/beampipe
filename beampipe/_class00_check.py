@@ -16,6 +16,8 @@ _LOK_ND = {
     'sph': ['2d', '3d'],
 }
 
+_ORIGIN = np.r_[0., 0., 0.]
+
 
 #############################################
 #############################################
@@ -91,7 +93,7 @@ def _check(
     coll = kwdargs['coll']
     wcsys = coll._which_csys
     kwdargs['key'] = ds._generic_check._obj_key(
-        d0=coll.get(wcsys, {}),
+        d0=coll.dobj.get(wcsys, {}),
         short='csys',
         key=kwdargs['key'],
         ndigits=None,
@@ -101,13 +103,13 @@ def _check(
     # kcsys0
     # ------------
 
-    lref = [kk for kk in lok if coll.dobj[wcsys][kk][''] == kk]
-    lok = list(coll.get(wcsys, {}).keys()) + [key]
+    lok = list(coll.dobj.get(wcsys, {}).keys())
+    lref = [kk for kk in lok if coll.dobj[wcsys][kk]['kcsys0'] == kk]
     kwdargs['kcsys0'] = ds._generic_check._check_var(
         kwdargs['kcsys0'], 'kcsys0',
         types=str,
-        allowed=lok,
-        default=lref[0],
+        allowed=lok + [kwdargs['key']],
+        default=(lref + [kwdargs['key']])[0],
     )
 
     # ------------
@@ -128,7 +130,7 @@ def _check(
     # ------------
 
     dv = {
-        kk: kwdargs[kk] for k in ['e0', 'e1', 'e2']
+        kk: kwdargs[kk] for kk in ['e0', 'e1', 'e2']
         if kwdargs[kk] is not None
     }
     nd_min = len(dv)
@@ -138,6 +140,7 @@ def _check(
         kwdargs['nd'], 'nd',
         types=str,
         allowed=lok,
+        default=lok[-1],
     )
     size = int(kwdargs['nd'][0])
 
@@ -155,13 +158,16 @@ def _check(
     # origin - provided => finite array of proper size
     # ------------
 
+    if kwdargs['origin'] is None:
+        kwdargs['origin'] = np.copy(_ORIGIN)
+
     oo = np.atleast_1d(kwdargs['origin']).ravel().astype(float)
 
     if np.any(~np.isfinite(oo)) or oo.size != size:
         msg = (
-            f"Arg 'origin' must be:\n"
-            "\t- a flat np.ndarray of finite values with size = {size}\n"
-            "Provided:\n\t{kwdargs['origin']}\n"
+            "Arg 'origin' must be:\n"
+            f"\t- a flat np.ndarray of finite values with size = {size}\n"
+            f"Provided:\n\t{kwdargs['origin']}\n"
         )
         raise Exception(msg)
     kwdargs['origin'] = oo
@@ -199,7 +205,7 @@ def _check(
 
     lok = [
         'key', 'nd', 'ctype',
-        'origin,''e0', 'e1', 'e2',
+        'origin', 'e0', 'e1', 'e2',
         'ortho', 'norm', 'direct', 'kcsys0',
     ]
     lout = [kk for kk in kwdargs.keys() if kk not in lok]
@@ -216,7 +222,7 @@ def _check(
 
 
 def _unit_vectors(
-    **kwd,
+    kwd,
 ):
 
     # ----------
@@ -262,20 +268,25 @@ def _unit_vectors(
     # nd
     if kwd['nd'] != '1d':
         if kwd['nd'] == '2d':
-            lcross = [np.cross(kwd['e0'], kwd['e1'])]
+            dcross = {'e0 x e1': np.cross(kwd['e0'], kwd['e1'])}
             emax = np.max([kwd['e0'], kwd['e1']])
         elif kwd['nd'] == '3d':
-            lcross = [
-                np.cross(kwd['e0'], kwd['e1']),
-                np.cross(kwd['e1'], kwd['e2']),
-                np.cross(kwd['e2'], kwd['e0']),
-            ]
+            dcross = {
+                'e0 x e1': np.linalg.norm(np.cross(kwd['e0'], kwd['e1'])),
+                'e1 x e2': np.linalg.norm(np.cross(kwd['e1'], kwd['e2'])),
+                'e2 x e0': np.linalg.norm(np.cross(kwd['e2'], kwd['e0'])),
+            }
             emax = np.max([kwd['e0'], kwd['e1'], kwd['e2']])
 
         # check colinearity
-        if np.any(np.abs(lcross) < 1e-9 * emax):
+        dfail = {
+            kk: vv for kk, vv in dcross.items() if np.abs(vv) < 1e-9 * emax
+        }
+        if len(dfail) > 0:
+            lstr = [f"\t- {kk} = vv" for kk, vv in dfail.items()]
             msg = (
-                "Unit vectors must not be co-linear!"
+                "Unit vectors must not be co-linear!\n"
+                + "\n".join(lstr)
             )
             raise Exception(msg)
 

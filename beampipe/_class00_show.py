@@ -47,7 +47,11 @@ def _show(coll=None, which=None, lcol=None, lar=None, show=None):
         for k1 in _LORDER:
 
             # parameters
-            nn = str(coll.dobj[which][k0].get(k1))
+            if k1 == 'kcsys0' and coll.dobj[which][k0][k1] == k0:
+                nn = ''
+            else:
+                nn = str(coll.dobj[which][k0].get(k1))
+
             arr.append(nn)
 
         lar0.append(arr)
@@ -73,7 +77,7 @@ def _show_details(coll=None, key=None, lcol=None, lar=None, show=None):
     # ---------------------------
 
     lcol.append([
-        'attr', 'x0', 'x1', 'x2',
+        'attr', 'x0 (kcsys0_e0)', 'x1 (kcsys0_e1)', 'x2 (kcsys0_e2)',
     ])
 
     # ---------------------------
@@ -90,7 +94,7 @@ def _show_details(coll=None, key=None, lcol=None, lar=None, show=None):
         # is2d
         for ii in range(3):
             if ii < size:
-                nn = coll.dobj[wcsys][key][kk][ii]
+                nn = f"{coll.dobj[wcsys][key][kk][ii]:4.3e}"
             else:
                 nn = ''
             arr.append(nn)
