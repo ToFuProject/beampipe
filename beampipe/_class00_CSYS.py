@@ -1,6 +1,8 @@
 import copy
+from typing import Annotated
 
 
+import numpy as np
 from datastock import DataStock as Previous
 
 
@@ -8,6 +10,7 @@ from datastock import DataStock as Previous
 from . import _class00_check as _check
 from . import _class00_show as _show
 from . import _class00_transform as _transform
+from . import _class00_transform_coords as _transform_coords
 
 
 __all__ = ['CSYS']
@@ -39,21 +42,22 @@ class CSYS(Previous):
 
     def add_csys(
         self,
-        key=None,
+        key: Annotated[str | None, 'key of the csys to be added'] = None,
         # cent
-        origin=None,
+        origin: Annotated[np.ndarray | None, "coords of the csys origin"] = None,
         # ctype
-        ctype=None,
+        ctype: Annotated[str | None, "type of csys (cart, ...)"] = None,
         # vect
-        e0=None,
-        e1=None,
-        e2=None,
-        # vecto options
-        norm=None,
-        direct=None,
+        e0: Annotated[np.ndarray | None, "coords of unit vector e0"] = None,
+        e1: Annotated[np.ndarray | None, "coords of unit vector e1"] = None,
+        e2: Annotated[np.ndarray | None, "coords of unit vector e2"] = None,
+        # vector options
+        ortho: Annotated[bool | None, "Are vectors orthogonal"] = None,
+        norm: Annotated[bool | None, "Are vectors normalized"] = None,
+        direct: Annotated[bool | None, "Is the vectors basis direct"] = None,
         # ref csys
-        kcsys0=None,
-    ):
+        kcsys0: Annotated[str | None, "csys in which coords are expressed"] = None,
+    ) -> None:
         """ Add a csys
 
         Can be 1d, 2d or 3d
@@ -105,6 +109,17 @@ class CSYS(Previous):
     # transform
     # -------------------
 
+    def get_csys_transform(
+        self,
+        key_in: Annotated[str | None, 'key to csys'] = None,
+        key_out: Annotated[str | None, 'key to csys'] = None,
+    ) -> dict:
+        """ Get the transform needed to get from one to another csys
+
+        Returns a dict
+        """
+        return _transform.main(coll=self, key_in=key_in, key_out=key_out)
+
     def transform_csys_coords(
         self,
         key_in=None,
@@ -120,7 +135,7 @@ class CSYS(Previous):
         can be provided as key to broadcastable ddata
         """
 
-        return _transform.main(coll=self, **locals())
+        return _transform_coords.main(coll=self, **locals())
 
     # -------------------
     # move within csys

@@ -15,25 +15,19 @@ def main(
     coll=None,
     key_in=None,
     key_out=None,
-    # coordinates
-    x0=None,
-    x1=None,
-    x2=None,
-    # unused
-    **kwdargs,
 ):
 
     # -----------
     # check
     # -----------
 
-    kwd = _check(**locals())
+    kwd = _check(coll=coll, key_in=key_in, key_out=key_out)
 
     # -----------
     # transform
     # -----------
 
-    return _transform(
+    return _get_transform(
         coll=coll,
         kwd=kwd,
     )
@@ -70,6 +64,7 @@ def _check(**kwd):
     # key_out
     lok = [
         kk for kk in lok
+        if kk != kwd['key_in']
         if coll.dobj[wcsys][kk]['ctype'] == ctype
         and coll.dobj[wcsys][kk]['nd'] == nd
         and coll.dobj[wcsys][kk]['kcsys0'] == kcsys0
@@ -80,74 +75,13 @@ def _check(**kwd):
         allowed=lok,
     )
 
-    # -------------
-    # coordinates
-    # -------------
+    # -----------
+    # implemented ?
+    # -----------
 
-    dfail = {}
-    size = int(nd[0])
-    lx = ['x0', 'x1', 'x2']
-    for ii in range(size):
-
-        # None
-        if kwd[lx[ii]] is None:
-            dfail[lx[ii]] = "is None"
-
-        # str
-        elif isinstance(kwd[lx[ii]], str):
-            if kwd[lx[ii]] not in coll.ddata.keys():
-                dfail[lx[ii]] = f"not found in ddata ({kwd[lx[ii]]})"
-
-        # array
-        else:
-            try:
-                kwd[lx[ii]] = np.atleast_1d(kwd[lx[ii]])
-            except Exception:
-                dfail[lx[ii]] = (
-                    f"not convertible to np.ndarray ({type(kwd[lx[ii]])})"
-                )
-
-    # errors
-    if len(dfail) > 0:
-        lstr = [f"\t- {kk}: vv" for kk, vv in dfail.items()]
-        msg = (
-            "Coordinates are not valid:\n"
-            + "\n".join(lstr)
-        )
+    if ctype != 'cart':
+        msg = f"csys transform not implement for ctype = '{ctype}'\n"
         raise Exception(msg)
-
-    # clean-up
-    for ii in range(size, 3):
-        kwd[lx[ii]] = None
-
-    # -------------
-    # broadcastable coordinates
-    # -------------
-
-    dshapes = {
-        lx[ii]: kwd[lx[ii]].shape if isinstance(kwd[lx[ii]], np.ndarray)
-        else coll.ddata[lx[ii]]['data'].shape
-        for ii in range(size)
-    }
-
-    try:
-        _ = np.broadcast_shapes(*list(dshapes.values()))
-    except Exception:
-        lstr = [f"\t- {kk}: vv" for kk, vv in dshapes.items()]
-        msg = (
-            "All coordinates must be broadcastable!\n"
-            + "\n".join(lstr)
-        )
-        raise Exception(msg)
-
-    # -------------
-    # clean
-    # -------------
-
-    lok = ['key_in', 'key_out', 'x0', 'x1', 'x2']
-    lout = [kk for kk in kwd.keys() if kk not in lok]
-    for kk in lout:
-        del kwd[kk]
 
     return kwd
 
@@ -158,7 +92,7 @@ def _check(**kwd):
 # #############################################
 
 
-def _transform(coll=None, kwd=None):
+def _get_transform(coll=None, kwd=None):
 
     # ------------
     # basics
@@ -166,11 +100,23 @@ def _transform(coll=None, kwd=None):
 
     wcsys = coll._which_csys
     ctype = coll.dobj[wcsys][kwd['key_in']]['ctype']
-    kcsys0 = coll.dobj[wcsys][kwd['key_in']]['kcsys0']
     nd = coll.dobj[wcsys][kwd['key_in']]['nd']
     size = int(nd[0])
 
     lx = ['x0', 'x1', 'x2']
+
+    # ------------
+    # data
+    # ------------
+
+    origin_in = coll.dobj[wcsys][kwd['key_in']]['origin']
+    origin_out = coll.dobj[wcsys][kwd['key_out']]['origin']
+    dorigin = origin_in - origin_out
+
+    de = {}
+    for ii in range(size):
+        de[f'e{ii}_in'] = coll.dobj[wcsys][kwd['key_in']][f'e{ii}']
+        de[f'e{ii}_out'] = coll.dobj[wcsys][kwd['key_out']][f'e{ii}']
 
     # ------------
     # units
@@ -190,66 +136,24 @@ def _transform(coll=None, kwd=None):
         units = None
 
     # ------------
-    # ref
-    # ------------
-
-    lref = [
-        coll.ddata[lx[ii]]['ref'] for ii in range(size)
-        if isinstance(lx[ii], str)
-    ]
-    # TBF
-
-    # ------------
-    # values
-    # ------------
-
-    dval = {
-        lx[ii]: kwd[lx[ii]] if isinstance(lx[ii], np.ndarray)
-        else coll.ddata[lx[ii]]['data']
-        for ii in range(size)
-    }
-
-    # ------------
-    # dout
-    # ------------
-
-    dout = {
-        lx[ii]: {
-            'data': None,
-            'units': units,
-            'ref': ref,
-        }
-        for ii in range(size)
-    }
-
-    # ------------
-    # easy
-    # ------------
-
-    if kwd['key_in'] == kwd['key_out']:
-        for ii in range(size):
-            dout[lx[ii]]['data'] = dval[lx[ii]]
-
-    # ------------
     # cartesian
     # ------------
 
+    dout = {}
     if ctype == 'cart':
-        trans, rot = coll.get_csys_transform(kwd)
         for ii in range(size):
-            dout[lx[ii]]['data'] = (
-                trans[lx[ii]]
-                + np.sum(
-                    [
-                        dval[lx[jj]] * rot[f'cos_e{jj}_e{ii}']
-                        for jj in range(size)
-                    ],
-                    axis=0,
-                )
-            )
 
-    else:
-        msg = f"tranform for csys of ctype '{ctype}' not implemented yet!"
-        raise NotImplementedError(msg)
+            # translation
+            dout[f'd{lx[ii]}'] = {
+                'data': np.sum(dorigin * de[f'e{ii}_out']),
+                'units': units,
+            }
+
+            # rotation
+            for jj in range(size):
+                dout[f"cos_e{jj}_e{ii}"] = {
+                    'data': np.sum(de[f'e{jj}_in'] * de[f"e{ii}_out"]),
+                    'units': None,
+                }
 
     return dout
