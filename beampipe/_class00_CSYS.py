@@ -51,6 +51,10 @@ class CSYS(Previous):
         e0: Annotated[np.ndarray | None, "coords of unit vector e0"] = None,
         e1: Annotated[np.ndarray | None, "coords of unit vector e1"] = None,
         e2: Annotated[np.ndarray | None, "coords of unit vector e2"] = None,
+        # units
+        units0: Annotated[str | None, "units of coords along e0"] = None,
+        units1: Annotated[str | None, "units of coords along e1"] = None,
+        units2: Annotated[str | None, "units of coords along e2"] = None,
         # vector options
         ortho: Annotated[bool | None, "Are vectors orthogonal"] = None,
         norm: Annotated[bool | None, "Are vectors normalized"] = None,

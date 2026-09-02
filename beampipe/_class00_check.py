@@ -38,6 +38,10 @@ def main(
     e0=None,
     e1=None,
     e2=None,
+    # units
+    units0=None,
+    units1=None,
+    units2=None,
     # vecto options
     ortho=None,
     norm=None,
