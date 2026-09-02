@@ -7,6 +7,7 @@ from datastock import DataStock as Previous
 # from . import _class00_check as _check
 from . import _class00_check as _check
 from . import _class00_show as _show
+from . import _class00_transform as _transform
 
 
 __all__ = ['CSYS']
@@ -101,5 +102,39 @@ class CSYS(Previous):
     # -------------------
 
     # -------------------
-    # convert csys
+    # transform
     # -------------------
+
+    def transform_csys_coords(
+        self,
+        key_in=None,
+        key_out=None,
+        # coordinates
+        x0=None,
+        x1=None,
+        x2=None,
+    ):
+        """ Transform coordinates from a given csys into another
+
+        coordinates have to be broadcastable arrays
+        can be provided as key to broadcastable ddata
+        """
+
+        return _transform.main(coll=self, **locals())
+
+    # -------------------
+    # move within csys
+    # -------------------
+
+    def move_translate_by():
+        return
+
+    def move_rotate_by():
+        return
+
+    # -------------------
+    # move to align with something
+    # -------------------
+
+    def move_align_to():
+        return
