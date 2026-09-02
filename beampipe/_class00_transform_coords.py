@@ -162,7 +162,16 @@ def _transform(coll=None, kwd=None, dtrans=None):
         coll.ddata[lx[ii]]['ref'] for ii in range(size)
         if isinstance(lx[ii], str)
     ]
-    # TBF
+
+    if len(lref) > 0:
+        if len(set(lref)) > 1:
+            msg = "Coordinates do not share the same ref!"
+            warnings.warn(msg)
+            ref = None
+        else:
+            ref = lref[0]
+    else:
+        ref = None
 
     # ------------
     # values
