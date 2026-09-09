@@ -60,6 +60,7 @@ def _check(**kwd):
     ctype = coll.dobj[wcsys][kwd['key_in']]['ctype']
     nd = coll.dobj[wcsys][kwd['key_in']]['nd']
     kcsys0 = coll.dobj[wcsys][kwd['key_in']]['kcsys0']
+    units = coll.dobj[wcsys][kwd['key_in']]['e0']['units']
 
     # key_out
     lok = [
@@ -68,6 +69,7 @@ def _check(**kwd):
         if coll.dobj[wcsys][kk]['ctype'] == ctype
         and coll.dobj[wcsys][kk]['nd'] == nd
         and coll.dobj[wcsys][kk]['kcsys0'] == kcsys0
+        and coll.dobj[wcsys][kk]['e0']['units'] == units
     ]
     kwd['key_out'] = ds._generic_check._check_var(
         kwd['key_out'], 'key_out',

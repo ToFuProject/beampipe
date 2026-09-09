@@ -62,13 +62,13 @@ def _check(**kwd):
 
     # ctype, nd
     nd = coll.dobj[wcsys][kwd['key_in']]['nd']
+    size = int(nd[0])
 
     # -------------
     # coordinates
     # -------------
 
     dfail = {}
-    size = int(nd[0])
     lx = ['x0', 'x1', 'x2']
     for ii in range(size):
 
@@ -131,6 +131,8 @@ def _check(**kwd):
     lout = [kk for kk in kwd.keys() if kk not in lok]
     for kk in lout:
         del kwd[kk]
+    for ii in range(size, 3):
+        del kwd[f"x{ii}"]
 
     return kwd
 
@@ -159,8 +161,8 @@ def _transform(coll=None, kwd=None, dtrans=None):
     # ------------
 
     lref = [
-        coll.ddata[lx[ii]]['ref'] for ii in range(size)
-        if isinstance(lx[ii], str)
+        coll.ddata[kwd[lx[ii]]]['ref'] for ii in range(size)
+        if isinstance(kwd[lx[ii]], str)
     ]
 
     if len(lref) > 0:
@@ -174,12 +176,34 @@ def _transform(coll=None, kwd=None, dtrans=None):
         ref = None
 
     # ------------
+    # units
+    # ------------
+
+    units = coll.dobj[wcsys][kwd['key_in']]['e0']['units']
+
+    lunits = [
+        coll.ddata[kwd[lx[ii]]]['units'] for ii in range(size)
+        if isinstance(kwd[lx[ii]], str)
+    ]
+
+    if len(lunits) > 0:
+
+        if len(set(lunits)) > 1:
+            msg = "Coordinates do not share the same units!"
+            raise Exception(msg)
+
+        elif lunits[0] != units:
+            msg = "Coordinates do not share the same units as unit vectors!"
+            raise Exception(msg)
+
+
+    # ------------
     # values
     # ------------
 
     dval = {
-        lx[ii]: kwd[lx[ii]] if isinstance(lx[ii], np.ndarray)
-        else coll.ddata[lx[ii]]['data']
+        lx[ii]: kwd[lx[ii]] if isinstance(kwd[lx[ii]], np.ndarray)
+        else coll.ddata[kwd[lx[ii]]]['data']
         for ii in range(size)
     }
 
@@ -190,7 +214,7 @@ def _transform(coll=None, kwd=None, dtrans=None):
     dout = {
         lx[ii]: {
             'data': None,
-            'units': dtrans[f"d{lx[ii]}"]['units'],
+            'units': units,
             'ref': ref,
         }
         for ii in range(size)

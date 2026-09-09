@@ -414,6 +414,12 @@ def _unit_vectors(kwd):
             )
             raise Exception(msg)
 
+    # uniformity
+    lunits = [kwd[f'units{ii}'] for ii in range(size)]
+    if len(set(lunits)) != 1:
+        msg = "Non-uniform units!"
+        raise Exception(msg)
+
     # ---------------
     # clean and check
     # ---------------
