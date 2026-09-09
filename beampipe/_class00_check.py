@@ -2,6 +2,7 @@ import copy
 
 
 import numpy as np
+import astropy.units as asunits
 import datastock as ds
 
 
@@ -17,6 +18,10 @@ _LOK_ND = {
 }
 
 _ORIGIN = np.r_[0., 0., 0.]
+
+_DUNITS = {
+    'cart': 'm',
+}
 
 
 #############################################
@@ -68,12 +73,22 @@ def main(
     # dobj
     # ---------------
 
-    wcsys = coll._which_csys
-    dobj = {
-        wcsys: {
-            key: copy.deepcopy(kwd),
-        }
+    dcsys = {
+        kk: vv for kk, vv in kwd.items()
+        if not kk.startswith('e')
+        and not kk.startswith('units')
+        and kk != 'key'
     }
+
+    le = [kk for kk in ['e0', 'e1', 'e2'] if kwd.get(kk) is not None]
+    for ie, ke in enumerate(le):
+        dcsys[ke] = {
+            'data': kwd[ke],
+            'units': kwd[f'units{ie}'],
+        }
+
+    wcsys = coll._which_csys
+    dobj = {wcsys: {kwd['key']: dcsys}}
 
     return None, None, dobj
 
@@ -209,7 +224,9 @@ def _check(
 
     lok = [
         'key', 'nd', 'ctype',
-        'origin', 'e0', 'e1', 'e2',
+        'origin',
+        'e0', 'e1', 'e2',
+        'units0', 'units1', 'units2',
         'ortho', 'norm', 'direct', 'kcsys0',
     ]
     lout = [kk for kk in kwdargs.keys() if kk not in lok]
@@ -225,9 +242,7 @@ def _check(
 #############################################
 
 
-def _unit_vectors(
-    kwd,
-):
+def _unit_vectors(kwd):
 
     # ----------
     # all default
@@ -264,6 +279,20 @@ def _unit_vectors(
             kwd['e1'] = np.cross(kwd['e2'], kwd['e0'])
         elif kwd['e2'] is None:
             kwd['e2'] = np.cross(kwd['e0'], kwd['e1'])
+
+    # ----------
+    # clean extra
+    # ----------
+
+    size = int(kwd['nd'][0])
+    for ii in range(size, 3):
+        estr = f"e{ii}"
+        if kwd[estr] is not None:
+            msg = (
+                f"Arg '{estr}' provided for a '{kwd['nd']}' csys!\n"
+                f"Provided: {kwd[estr]}\n"
+            )
+            raise Exception(msg)
 
     # ----------
     # basis - not colinear
@@ -344,5 +373,39 @@ def _unit_vectors(
                     "The vector basis must be direct!"
                 )
                 raise Exception(msg)
+
+    # ----------
+    # units
+    # ----------
+
+    lunits = ['units0', 'units1', 'units2']
+    for ii in range(size):
+        kwd[lunits[ii]] = ds._generic_check._check_var(
+            kwd[lunits[ii]], lunits[ii],
+            types=str,
+            default=_DUNITS[kwd['ctype']],
+        )
+        try:
+            kwd[lunits[ii]] = asunits.Unit(kwd[lunits[ii]])
+        except Exception:
+            pass
+
+    # clean
+    for ii in range(size, 3):
+        if kwd[lunits[ii]] is not None:
+            msg = (
+                f"Arg '{lunits[ii]}' provided for a '{kwd['nd']}' csys!\n"
+                f"Provided: {kwd[lunits[ii]]}\n"
+            )
+            raise Exception(msg)
+
+    # ---------------
+    # clean and check
+    # ---------------
+
+    lNone = [kk for kk, vv in kwd.items() if vv is None]
+    assert len(lNone) == (3-size)*2
+    for kk in lNone:
+        del kwd[kk]
 
     return

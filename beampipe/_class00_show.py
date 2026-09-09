@@ -10,6 +10,7 @@
 _LORDER = [
     'nd', 'ctype',
     'ortho', 'norm', 'direct',
+    'units',
     'kcsys0',
 ]
 
@@ -51,6 +52,14 @@ def _show(coll=None, which=None, lcol=None, lar=None, show=None):
                 nn = ''
             else:
                 nn = str(coll.dobj[which][k0].get(k1))
+
+            # units
+            if k1 == 'units':
+                size = int(coll.dobj[which][k0]['nd'][0])
+                nn = str(tuple([
+                    str(coll.dobj[which][k0][f'e{ii}']['units'])
+                    for ii in range(size)
+                ]))
 
             arr.append(nn)
 
@@ -94,7 +103,10 @@ def _show_details(coll=None, key=None, lcol=None, lar=None, show=None):
         # is2d
         for ii in range(3):
             if ii < size:
-                nn = f"{coll.dobj[wcsys][key][kk][ii]:4.3e}"
+                if kk == 'origin':
+                    nn = f"{coll.dobj[wcsys][key][kk][ii]:4.3e}"
+                else:
+                    nn = f"{coll.dobj[wcsys][key][kk]['data'][ii]:4.3e}"
             else:
                 nn = ''
             arr.append(nn)
