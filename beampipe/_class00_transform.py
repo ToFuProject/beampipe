@@ -115,19 +115,19 @@ def _get_transform(coll=None, kwd=None):
 
     de = {}
     for ii in range(size):
-        de[f'e{ii}_in'] = coll.dobj[wcsys][kwd['key_in']][f'e{ii}']
-        de[f'e{ii}_out'] = coll.dobj[wcsys][kwd['key_out']][f'e{ii}']
+        de[f'e{ii}_in'] = coll.dobj[wcsys][kwd['key_in']][f'e{ii}']['data']
+        de[f'e{ii}_out'] = coll.dobj[wcsys][kwd['key_out']][f'e{ii}']['data']
 
     # ------------
     # units
     # ------------
 
     lunits = [
-        coll.ddata[lx[ii]]['units'] for ii in range(size)
-        if isinstance(lx[ii], str)
+        coll.dobj[wcsys][kwd['key_out']][f'e{ii}']['units']
+        for ii in range(size)
     ]
     if len(set(lunits)) > 1:
-        msg = f"Units are different for each coordinates : {lunits}\n"
+        msg = f"Units are different for each coordinates: {lunits}\n"
         warnings.warn(msg)
         units = None
     elif len(set(lunits)) == 1:
