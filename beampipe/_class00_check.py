@@ -1,6 +1,3 @@
-import copy
-
-
 import numpy as np
 import astropy.units as asunits
 import datastock as ds
