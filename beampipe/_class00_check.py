@@ -119,19 +119,6 @@ def _check(
     )
 
     # ------------
-    # kcsys0
-    # ------------
-
-    lok = list(coll.dobj.get(wcsys, {}).keys())
-    lref = [kk for kk in lok if coll.dobj[wcsys][kk]['kcsys0'] == kk]
-    kwdargs['kcsys0'] = ds._generic_check._check_var(
-        kwdargs['kcsys0'], 'kcsys0',
-        types=str,
-        allowed=lok + [kwdargs['key']],
-        default=(lref + [kwdargs['key']])[0],
-    )
-
-    # ------------
     # ctype
     # ------------
 
@@ -155,11 +142,21 @@ def _check(
     nd_min = len(dv)
     lok = [f"{ii}d" for ii in range(nd_min, 4)]
     lok = [kk for kk in lok if kk in nd_ok]
+
+    nn = list(set([len(vv) for vv in dv.values()]))
+    if len(nn) > 1:
+        msg = "Unit vectors do not seem to have consistent size!"
+        raise Exception(msg)
+    elif len(nn) == 1:
+        nd_def = f"{nn[0]}d"
+    else:
+        nd_def = lok[-1]
+
     kwdargs['nd'] = ds._generic_check._check_var(
         kwdargs['nd'], 'nd',
         types=str,
         allowed=lok,
-        default=lok[-1],
+        default=nd_def,
     )
     size = int(kwdargs['nd'][0])
 
@@ -172,6 +169,23 @@ def _check(
                 "\t- All or all but one (derived) unit vectors\n"
             )
             raise Exception(msg)
+
+    # ------------
+    # kcsys0
+    # ------------
+
+    lok = [
+        kk for kk, vv in coll.dobj.get(wcsys, {}).items()
+        if vv['ctype'] == kwdargs['ctype']
+        and vv['nd'] == kwdargs['nd']
+    ]
+    lref = [kk for kk in lok if coll.dobj[wcsys][kk]['kcsys0'] == kk]
+    kwdargs['kcsys0'] = ds._generic_check._check_var(
+        kwdargs['kcsys0'], 'kcsys0',
+        types=str,
+        allowed=lok + [kwdargs['key']],
+        default=(lref + [kwdargs['key']])[0],
+    )
 
     # ------------
     # origin - provided => finite array of proper size
@@ -268,7 +282,7 @@ def _unit_vectors(kwd):
     if kwd['nd'] == '2d':
         if kwd['e0'] is None:
             kwd['e0'] = np.r_[kwd['e1'][1], -kwd['e1'][0]]
-        elif kwd['e1']:
+        elif kwd['e1'] is None:
             kwd['e1'] = np.r_[-kwd['e0'][1], kwd['e0'][0]]
 
     # 3d
@@ -328,8 +342,9 @@ def _unit_vectors(kwd):
     # ----------
 
     if kwd['norm'] is True:
-        for kk in lv:
-            kwd[kk] = kwd[kk] / np.sqrt(np.sum(kwd[kk]**2))
+        for ii in range(size):
+            estr = f"e{ii}"
+            kwd[estr] = kwd[estr] / np.sqrt(np.sum(kwd[estr]**2))
 
     # -----------
     # ortho
